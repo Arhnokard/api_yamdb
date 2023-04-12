@@ -13,7 +13,7 @@ class Review(models.Model):
         validators=[MaxValueValidator(10, 'Оценка может быть от 1 до 10'),
                     MinValueValidator(1, 'Оценка  может быть от 1 до 10')]
     )
-    pub_date = models.TimeField('Дата отзыва',auto_now_add=True)
+    pub_date = models.TimeField('Дата отзыва', auto_now_add=True)
 
     def __str__(self):
         return self.text[:15]
@@ -23,3 +23,16 @@ class Review(models.Model):
             models.UniqueConstraint(fields=['author', 'title'],
                                     name='unique_author')
         ]
+
+
+class Comment(models.Model):
+    text = models.TextField()
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comments'
+    )
+    review = models.ForeignKey(Review, on_delete=models.CASCADE,
+                              related_name='comments')
+    pub_date = models.TimeField('Дата комментария', auto_now_add=True)
+
+    def __str__(self):
+        return self.text[:15]
