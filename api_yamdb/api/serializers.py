@@ -1,6 +1,6 @@
 from rest_framework import serializers
 import datetime as dt
-
+from django.db.models import Avg
 
 from reviews.models import Genre, Category, Title
 
@@ -30,11 +30,18 @@ class TitleSerializer(serializers.ModelSerializer):
         many=True
     )
     description = serializers.CharField(required=False)
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Title
         fields = ('__all__')
         read_only_fields = ('rating',)
+
+    def get_rating(self, obj):
+        rating = obj.reviews.aggregate(Avg('score'))
+        if not rating:
+            return 0
+        return round(rating, 1)
 
     def validate_year(self, value):
         year = dt.date.today().year
