@@ -1,8 +1,9 @@
-from rest_framework import serializers
 import datetime as dt
-from django.db.models import Avg
 
-from reviews.models import Genre, Category, Title
+from django.db.models import Avg
+from rest_framework import serializers
+
+from reviews.models import Genre, Category, Title, Review, Title
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -63,3 +64,12 @@ class TitleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Такой категории не существует!')
         return value
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(read_only=True, slug_field='username')
+    title = serializers.PrimaryKeyRelatedField(queryset=Title.objects.all(), write_only=True)
+
+    class Meta:
+        fields = ('id', 'text', 'author', 'title', 'score', 'pub_date')
+        model = Review
