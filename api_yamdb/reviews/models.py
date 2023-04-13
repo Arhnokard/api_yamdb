@@ -1,6 +1,8 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+from reviews.models import Genre, Category, Title
+
 
 class Genre(models.Model):
     name = models.CharField('Название жанра', max_length=256)
@@ -12,6 +14,11 @@ class Category(models.Model):
     name = models.CharField('Название категории', max_length=256)
     slug = models.SlugField('Сокращенное название категории',
                             unique=True, max_length=50)
+
+
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
 
 
 class Title(models.Model):
@@ -26,11 +33,6 @@ class Title(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL,
         blank=True, null=True, related_name='titles')
-
-
-class GenreTitle(models.Model):
-    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
-    title = models.ForeignKey(Title, on_delete=models.CASCADE)
 
 
 class Review(models.Model):
@@ -54,4 +56,3 @@ class Review(models.Model):
             models.UniqueConstraint(fields=['author', 'title'],
                                     name='unique_author')
         ]
-
