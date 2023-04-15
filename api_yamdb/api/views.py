@@ -1,22 +1,22 @@
+from django.core.mail import EmailMessage
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import viewsets, filters, permissions, status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.permissions import IsAuthenticated
-
-from .permissions import (AdminModeratorAuthorPermission, AdminOnly,
-                          IsAdminUserOrReadOnly)
-
 from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.core.mail import EmailMessage
 
-from reviews.models import Genre, Category, Title, User
-from .serializers import GenreSerializer, CategorySerializer, TitleSerializer, ReviewSerializer, UsersSerializer, NotAdminSerializer, GetTokenSerializer, SignUpSerializer
+
+from reviews.models import Genre, Category, Title, User, Review
+from .permissions import (AdminModeratorAuthorPermission, AdminOnly,
+                          IsAdminUserOrReadOnly)
+from .serializers import (GenreSerializer, CategorySerializer, TitleSerializer, ReviewSerializer,
+                          UsersSerializer, NotAdminSerializer, GetTokenSerializer,
+                          SignUpSerializer ,CommentSerializer)
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -24,7 +24,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AdminOnly,)
     lookup_field = 'username'
-    filter_backends = (SearchFilter, )
+    filter_backends = (filters.SearchFilter, )
     search_fields = ('username', )
 
     @action(
@@ -157,3 +157,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
         serializer.save(author=self.request.user, title=title)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    pagination_class = LimitOffsetPagination
+
+    def get_queryset(self):
+        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        return review.comments.all()
+    
+    def perform_create(self, serializer):
+        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        serializer.save(author=self.request.user, review=review)

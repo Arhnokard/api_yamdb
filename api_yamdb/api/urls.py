@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import (GenreViewSet, CategoryViewSet, TitleViewSet,
+from .views import (GenreViewSet, CategoryViewSet, TitleViewSet, CommentViewSet,
                     ReviewViewSet, UsersViewSet, APIGetToken, APISignup)
 
 
@@ -10,7 +10,9 @@ router_v1.register('genres', GenreViewSet)
 router_v1.register('categories', CategoryViewSet)
 router_v1.register('titles', TitleViewSet)
 router_v1.register('title/(?P<post_id>\d+)/rewiews',
-                   ReviewViewSet, basename='rewiews')
+                   ReviewViewSet, basename='rewiews'),
+router.register('titles/(?P<post_id>\d+)/rewiews/(?P<post_id>\d+)/comments',
+                CommentViewSet, basename='comments'),
 router_v1.register(
     'users',
     UsersViewSet,

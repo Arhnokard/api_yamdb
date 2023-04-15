@@ -3,7 +3,7 @@ import datetime as dt
 from django.db.models import Avg
 from rest_framework import serializers
 
-from reviews.models import Genre, Category, Title, Review, User
+from reviews.models import Genre, Category, Title, Review, User, Comment
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -113,3 +113,14 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('id', 'text', 'author', 'title', 'score', 'pub_date')
         model = Review
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(read_only=True,
+                                          slug_field='username')
+    rewiew = serializers.PrimaryKeyRelatedField(queryset=Review.objects.all(),
+                                               write_only=True)
+
+    class Meta:
+        fields = ('id', 'text', 'author', 'review', 'pub_date')
+        model = Comment
