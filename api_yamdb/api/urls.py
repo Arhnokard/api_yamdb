@@ -9,9 +9,9 @@ router_v1 = DefaultRouter()
 router_v1.register('genres', GenreViewSet)
 router_v1.register('categories', CategoryViewSet)
 router_v1.register('titles', TitleViewSet)
-router_v1.register('title/(?P<post_id>\d+)/rewiews',
-                   ReviewViewSet, basename='rewiews'),
-router.register('titles/(?P<post_id>\d+)/rewiews/(?P<post_id>\d+)/comments',
+router_v1.register('title/(?P<title_id>\d+)/reviews',
+                   ReviewViewSet, basename='reviews'),
+router_v1.register('titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
                 CommentViewSet, basename='comments'),
 router_v1.register(
     'users',
