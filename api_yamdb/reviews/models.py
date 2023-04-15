@@ -22,14 +22,10 @@ class User(AbstractUser):
         validators=(validate_username,),
         max_length=150,
         unique=True,
-        blank=False,
-        null=False
     )
     email = models.EmailField(
         max_length=254,
         unique=True,
-        blank=False,
-        null=False
     )
     role = models.CharField(
         'роль',
@@ -56,7 +52,6 @@ class User(AbstractUser):
         'код подтверждения',
         max_length=255,
         null=True,
-        blank=False,
         default='XXXX'
     )
 
