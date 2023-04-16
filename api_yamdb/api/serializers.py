@@ -2,6 +2,7 @@ import datetime as dt
 
 from django.db.models import Avg
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Genre, Category, Title, Review, User, Comment
 
@@ -73,14 +74,15 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('__all__')
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
         read_only_fields = ('rating',)
 
     def get_rating(self, obj):
+        if obj.reviews.count()==0:
+            return None
         rating = obj.reviews.aggregate(Avg('score'))
-        if not rating:
-            return 0
-        return round(rating, 1)
+        return round(rating['score__avg'], 1)
+        
 
     def validate_year(self, value):
         year = dt.date.today().year
@@ -106,20 +108,27 @@ class TitleSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True,
-                                          slug_field='username')
+                                          slug_field='username', default=serializers.CurrentUserDefault())
     title = serializers.PrimaryKeyRelatedField(queryset=Title.objects.all(),
-                                               write_only=True)
+                                               write_only=True, required=False, default=1)
 
     class Meta:
         fields = ('id', 'text', 'author', 'title', 'score', 'pub_date')
         model = Review
 
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Review.objects.all(),
+                fields=('author', 'title')
+            )
+        ]
+
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True,
                                           slug_field='username')
-    rewiew = serializers.PrimaryKeyRelatedField(queryset=Review.objects.all(),
-                                               write_only=True)
+    review = serializers.PrimaryKeyRelatedField(queryset=Review.objects.all(),
+                                               write_only=True, required=False)
 
     class Meta:
         fields = ('id', 'text', 'author', 'review', 'pub_date')
