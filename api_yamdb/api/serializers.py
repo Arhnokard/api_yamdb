@@ -52,6 +52,12 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
 
+class GenreField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = GenreSerializer(value)
+        return serializer.data
+
+
 class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -59,12 +65,18 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
 
+class CategoryField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = CategorySerializer(value)
+        return serializer.data
+
+
 class TitleSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(
+    category = CategoryField(
         queryset=Category.objects.all(),
         slug_field='slug'
     )
-    genre = serializers.SlugRelatedField(
+    genre = GenreField(
         queryset=Genre.objects.all(),
         slug_field='slug',
         many=True
@@ -78,11 +90,10 @@ class TitleSerializer(serializers.ModelSerializer):
         read_only_fields = ('rating',)
 
     def get_rating(self, obj):
-        if obj.reviews.count()==0:
+        if obj.reviews.count() == 0:
             return None
         rating = obj.reviews.aggregate(Avg('score'))
         return round(rating['score__avg'], 1)
-        
 
     def validate_year(self, value):
         year = dt.date.today().year
@@ -93,9 +104,11 @@ class TitleSerializer(serializers.ModelSerializer):
 
     def validate_genre(self, value):
         genres = Genre.objects.all()
-        if value not in genres:
-            raise serializers.ValidationError(
-                'Такого жанра не существует!')
+        for item in value:
+            if item not in genres:
+                raise serializers.ValidationError(
+                    'Такого жанра не существует!'
+                )
         return value
 
     def validate_category(self, value):
