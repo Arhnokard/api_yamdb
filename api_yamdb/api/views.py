@@ -87,28 +87,26 @@ class APISignup(APIView):
     permission_classes = (permissions.AllowAny,)
 
     @staticmethod
-    def send_email(data):
+    def send_email(user):
         email = EmailMessage(
-            subject=data['email_subject'],
-            body=data['email_body'],
-            to=[data['to_email']]
+            subject='Код подтверждения для доступа к API!',
+            body=(
+            f'Доброе время суток, {user.username}.'
+            f'\nКод подтверждения для доступа к API: {user.confirmation_code}'
+        ),
+            to=[user.email]
         )
         email.send()
 
     def post(self, request):
+        if 'username' and 'email' in request.data:
+            if User.objects.filter(username=request.data.get('username'), email=request.data.get('email')).exists():
+                self.send_email(User.objects.get(username=request.data.get('username')))
+                return Response(status=status.HTTP_200_OK)
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        email_body = (
-            f'Доброе время суток, {user.username}.'
-            f'\nКод подтверждения для доступа к API: {user.confirmation_code}'
-        )
-        data = {
-            'email_body': email_body,
-            'to_email': user.email,
-            'email_subject': 'Код подтверждения для доступа к API!'
-        }
-        self.send_email(data)
+        self.send_email(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

@@ -123,15 +123,14 @@ class TitleSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True,
-                                          slug_field='username', default=serializers.CurrentUserDefault())
+                                          slug_field='username')
     title = serializers.PrimaryKeyRelatedField(queryset=Title.objects.all(),
-                                               write_only=True, required=False, default=1)
+                                               write_only=True, required=False)
 
     def validate(self, data):
             request = self.context['request']
             author = request.user
-            title_id = self.context['view'].kwargs.get('title_id')
-            title = get_object_or_404(Title, pk=title_id)
+            title = get_object_or_404(Title, id=self.context['view'].kwargs.get('title_id'))
             if request.method == 'POST':
                 if Review.objects.filter(title=title, author=author).exists():
                     raise ValidationError('Вы не можете добавить более'
