@@ -1,28 +1,29 @@
 from django.core.mail import EmailMessage
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, filters, permissions, status, mixins
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework import viewsets, filters, permissions, status, mixins
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
 
 
 from reviews.models import Genre, Category, Title, User, Review
 from .permissions import (AdminModeratorAuthorPermission, AdminOnly,
                           IsAdminUserOrReadOnly)
-from .serializers import (GenreSerializer, CategorySerializer, TitleSerializer, ReviewSerializer,
-                          UsersSerializer, NotAdminSerializer, GetTokenSerializer,
-                          SignUpSerializer, CommentSerializer)
+from .serializers import (GenreSerializer, CategorySerializer,
+                          TitleSerializer, ReviewSerializer,
+                          UsersSerializer, NotAdminSerializer,
+                          GetTokenSerializer, SignUpSerializer,
+                          CommentSerializer)
 from api.filters import TitleFilter
 
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
-    permission_classes = (IsAuthenticated, AdminOnly,)
+    permission_classes = (permissions.IsAuthenticated, AdminOnly,)
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('username', )
@@ -31,7 +32,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     @action(
         methods=['GET', 'PATCH'],
         detail=False,
-        permission_classes=(IsAuthenticated,),
+        permission_classes=(permissions.IsAuthenticated,),
         url_path='me')
     def get_current_user_info(self, request):
         if request.method == 'GET':
