@@ -124,16 +124,16 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
 
     def validate(self, data):
-            request = self.context['request']
-            author = request.user
-            title = get_object_or_404(
-                Title, id=self.context['view'].kwargs.get('title_id')
-            )
-            if request.method == 'POST':
-                if Review.objects.filter(title=title, author=author).exists():
-                    raise ValidationError('Вы не можете добавить более'
-                                          'одного отзыва на произведение')
-            return data
+        request = self.context['request']
+        author = request.user
+        title = get_object_or_404(
+            Title, id=self.context['view'].kwargs.get('title_id')
+        )
+        if request.method == 'POST':
+            if Review.objects.filter(title=title, author=author).exists():
+                raise ValidationError('Вы не можете добавить более'
+                                      'одного отзыва на произведение')
+        return data
 
     class Meta:
         fields = ('id', 'text', 'author', 'title', 'score', 'pub_date')
