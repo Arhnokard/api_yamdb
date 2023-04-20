@@ -1,54 +1,51 @@
 from django.core.mail import EmailMessage
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, filters, permissions, status, mixins
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework import viewsets, filters, permissions, status
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
 
 
 from reviews.models import Genre, Category, Title, User, Review
 from .permissions import (AdminModeratorAuthorPermission, AdminOnly,
                           IsAdminUserOrReadOnly)
-from .serializers import (GenreSerializer, CategorySerializer, TitleSerializer, ReviewSerializer,
-                          UsersSerializer, NotAdminSerializer, GetTokenSerializer,
-                          SignUpSerializer ,CommentSerializer)
+from .serializers import (GenreSerializer, CategorySerializer,
+                          TitleSerializer, ReviewSerializer,
+                          UsersSerializer, NotAdminSerializer,
+                          GetTokenSerializer, SignUpSerializer,
+                          CommentSerializer)
+from api.filters import TitleFilter
 
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
-    permission_classes = (IsAuthenticated, AdminOnly,)
+    permission_classes = (permissions.IsAuthenticated, AdminOnly,)
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('username', )
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     @action(
         methods=['GET', 'PATCH'],
         detail=False,
-        permission_classes=(IsAuthenticated,),
+        permission_classes=(permissions.IsAuthenticated,),
         url_path='me')
     def get_current_user_info(self, request):
-        serializer = UsersSerializer(request.user)
+        if request.method == 'GET':
+            serializer = UsersSerializer(request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         if request.method == 'PATCH':
-            if request.user.is_admin:
-                serializer = UsersSerializer(
-                    request.user,
-                    data=request.data,
-                    partial=True)
-            else:
-                serializer = NotAdminSerializer(
-                    request.user,
-                    data=request.data,
-                    partial=True)
+            serializer = NotAdminSerializer(
+                request.user, data=request.data, partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class APIGetToken(APIView):
@@ -92,45 +89,50 @@ class APISignup(APIView):
     permission_classes = (permissions.AllowAny,)
 
     @staticmethod
-    def send_email(data):
+    def send_email(user):
         email = EmailMessage(
-            subject=data['email_subject'],
-            body=data['email_body'],
-            to=[data['to_email']]
+            subject='Код подтверждения для доступа к API!',
+            body=(
+            f'Доброе время суток, {user.username}.'
+            f'\nКод подтверждения для доступа к API: {user.confirmation_code}'
+        ),
+            to=[user.email]
         )
         email.send()
 
     def post(self, request):
+        if 'username' and 'email' in request.data:
+            if User.objects.filter(username=request.data.get('username'), email=request.data.get('email')).exists():
+                self.send_email(User.objects.get(username=request.data.get('username')))
+                return Response(status=status.HTTP_200_OK)
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        email_body = (
-            f'Доброе время суток, {user.username}.'
-            f'\nКод подтверждения для доступа к API: {user.confirmation_code}'
-        )
-        data = {
-            'email_body': email_body,
-            'to_email': user.email,
-            'email_subject': 'Код подтверждения для доступа к API!'
-        }
-        self.send_email(data)
+        self.send_email(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class CreateDestroyViewSet(mixins.CreateModelMixin,
+                           mixins.DestroyModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
+    pass
+
+
+class GenreViewSet(CreateDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    #permission_classes = 
+    permission_classes = (IsAdminUserOrReadOnly,)
     lookup_field = 'slug'
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(CreateDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    #permission_classes = 
+    permission_classes = (IsAdminUserOrReadOnly,)
     lookup_field = 'slug'
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
@@ -140,19 +142,25 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    #permission_classes = 
+    permission_classes = (IsAdminUserOrReadOnly,)
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('name', 'year', 'genre__slug', 'category__slug')
+    filterset_class = TitleFilter
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     pagination_class = LimitOffsetPagination
+    permission_classes = (AdminModeratorAuthorPermission,)
 
     def get_queryset(self):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
         return title.reviews.all()
+
+    def get_permissions(self):
+        if self.action == 'POST':
+            return (permissions.IsAuthenticatedOrReadOnly(),)
+        return super().get_permissions()
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
@@ -162,11 +170,17 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     pagination_class = LimitOffsetPagination
+    permission_classes = (AdminModeratorAuthorPermission,)
 
     def get_queryset(self):
         review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
         return review.comments.all()
-    
+
+    def get_permissions(self):
+        if self.action == 'POST':
+            return (permissions.IsAuthenticatedOrReadOnly(),)
+        return super().get_permissions()
+
     def perform_create(self, serializer):
         review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
         serializer.save(author=self.request.user, review=review)

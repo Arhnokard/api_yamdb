@@ -1,6 +1,7 @@
+from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+
 from .validators import validate_username
 
 
@@ -89,9 +90,7 @@ class Category(models.Model):
 class Title(models.Model):
     name = models.CharField('Название произведения', max_length=256)
     year = models.IntegerField('Год выхода')
-    rating = models.IntegerField('Рейтинг приозведения')
-    description = models.TextField('Описание произведения',
-                                   blank=True)
+    description = models.TextField('Описание произведения', blank=True)
     genre = models.ManyToManyField(Genre, through='GenreTitle',
                                    blank=True, related_name='titles')
     category = models.ForeignKey(
@@ -105,12 +104,11 @@ class GenreTitle(models.Model):
 
 
 class Review(models.Model):
-    '''Модель отзывов на произведения'''
     text = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE,
-                               related_name='rewiews')
+                               related_name='reviews')
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
-                              related_name='rewiews')
+                              related_name='reviews')
     score = models.IntegerField(
         validators=[MaxValueValidator(10, 'Оценка может быть от 1 до 10'),
                     MinValueValidator(1, 'Оценка  может быть от 1 до 10')]
@@ -123,7 +121,7 @@ class Review(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['author', 'title'],
-                                    name='unique_author')
+                                    name='unique_author_title')
         ]
 
 
