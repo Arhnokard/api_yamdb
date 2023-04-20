@@ -131,7 +131,7 @@ class Comment(models.Model):
         User, on_delete=models.CASCADE, related_name='comments'
     )
     review = models.ForeignKey(Review, on_delete=models.CASCADE,
-                              related_name='comments')
+                               related_name='comments')
     pub_date = models.TimeField('Дата комментария', auto_now_add=True)
 
     def __str__(self):

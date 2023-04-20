@@ -82,7 +82,8 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
+        fields = ('id', 'name', 'year', 'rating',
+                  'description', 'genre', 'category')
         read_only_fields = ('rating',)
 
     def get_rating(self, obj):
@@ -119,17 +120,19 @@ class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True,
                                           slug_field='username')
     title = serializers.PrimaryKeyRelatedField(
-        queryset=Title.objects.all(),write_only=True, required=False
+        queryset=Title.objects.all(), write_only=True, required=False
     )
 
     def validate(self, data):
             request = self.context['request']
             author = request.user
-            title = get_object_or_404(Title, id=self.context['view'].kwargs.get('title_id'))
+            title = get_object_or_404(
+                Title, id=self.context['view'].kwargs.get('title_id')
+            )
             if request.method == 'POST':
                 if Review.objects.filter(title=title, author=author).exists():
                     raise ValidationError('Вы не можете добавить более'
-                                        'одного отзыва на произведение')
+                                          'одного отзыва на произведение')
             return data
 
     class Meta:

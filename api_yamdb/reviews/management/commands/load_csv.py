@@ -46,8 +46,10 @@ class Command(BaseCommand):
             review = Review(
                 id=row['id'], title_id=row['title_id'],
                 text=row['text'], author_id=row['author'],
-                score=row['score'], pub_date=datetime.strptime(row['pub_date'], '%Y-%m-%dT%H:%M:%S.%fZ')
-            ) 
+                score=row['score'],
+                pub_date=datetime.strptime(row['pub_date'],
+                                           '%Y-%m-%dT%H:%M:%S.%fZ')
+            )
             review.save()
         for row in DictReader(
             open('./static/data/comments.csv', encoding='utf-8')
@@ -55,7 +57,8 @@ class Command(BaseCommand):
             comment = Comment(
                 id=row['id'], review_id=row['review_id'],
                 text=row['text'], author_id=row['author'],
-                pub_date=datetime.strptime(row['pub_date'], '%Y-%m-%dT%H:%M:%S.%fZ')
+                pub_date=datetime.strptime(row['pub_date'],
+                                           '%Y-%m-%dT%H:%M:%S.%fZ')
             )
             comment.save()
         for row in DictReader(

@@ -45,7 +45,8 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.data, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(serializer.data,
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class APIGetToken(APIView):
@@ -93,17 +94,21 @@ class APISignup(APIView):
         email = EmailMessage(
             subject='Код подтверждения для доступа к API!',
             body=(
-            f'Доброе время суток, {user.username}.'
-            f'\nКод подтверждения для доступа к API: {user.confirmation_code}'
-        ),
+                f'Доброе время суток, {user.username}.'
+                f'\nКод подтверждения для доступа к API:'
+                f'{user.confirmation_code}'
+            ),
             to=[user.email]
         )
         email.send()
 
     def post(self, request):
         if 'username' and 'email' in request.data:
-            if User.objects.filter(username=request.data.get('username'), email=request.data.get('email')).exists():
-                self.send_email(User.objects.get(username=request.data.get('username')))
+            if User.objects.filter(username=request.data.get('username'),
+                                   email=request.data.get('email')).exists():
+                self.send_email(
+                    User.objects.get(username=request.data.get('username'))
+                )
                 return Response(status=status.HTTP_200_OK)
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
