@@ -1,10 +1,10 @@
 from csv import DictReader
+from datetime import datetime
 
 from django.core.management import BaseCommand
-from reviews.models import Comment, Review
-from reviews.models import Category, Genre, Title, GenreTitle
-from reviews.models import User
-from datetime import datetime
+
+from reviews.models import (Comment, Review, Category, Genre,
+                            Title, GenreTitle, User)
 
 
 class Command(BaseCommand):
