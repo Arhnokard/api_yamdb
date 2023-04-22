@@ -8,6 +8,7 @@ from rest_framework.exceptions import ValidationError
 from django.core import validators
 
 from reviews.models import Genre, Category, Title, Review, User, Comment
+from reviews.validators import validate_username
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -35,7 +36,24 @@ class GetTokenSerializer(serializers.ModelSerializer):
         fields = ('username', 'confirmation_code')
 
 
-class SignUpSerializer(serializers.ModelSerializer):
+class SignUpSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        validators=(validate_username, validators.MaxLengthValidator(150),)
+    )
+    email = serializers.EmailField(
+        validators=(validators.MaxLengthValidator(254),)
+    )
+
+    def validate(self, data):
+        users = User.objects.all()
+        for user in users:
+            if data['username'] == user.username:
+                if data['email'] == user.email:
+                    return data
+                raise ValidationError('Указан неверный email')            
+            if data['email'] == user.email:
+                raise ValidationError('email занят')
+        return data
 
     class Meta:
         model = User

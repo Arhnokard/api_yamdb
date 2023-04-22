@@ -79,12 +79,22 @@ class Genre(models.Model):
     name = models.CharField('Название жанра', max_length=256)
     slug = models.SlugField('Сокращенное название жанра',
                             unique=True, max_length=50)
+    
+    class Meta:
+        ordering = ('name',)
+        verbose_name = 'Жанр'
+        verbose_name_plural = 'Жанры'
 
 
 class Category(models.Model):
     name = models.CharField('Название категории', max_length=256)
     slug = models.SlugField('Сокращенное название категории',
                             unique=True, max_length=50)
+    
+    class Meta:
+        ordering = ('name',)
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
 
 
 class Title(models.Model):
@@ -96,6 +106,10 @@ class Title(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL,
         blank=True, null=True, related_name='titles')
+    
+    class Meta:
+        verbose_name = 'Произведение'
+        verbose_name_plural = 'Произведения'
 
 
 class GenreTitle(models.Model):
@@ -109,7 +123,7 @@ class Review(models.Model):
                                related_name='reviews')
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
                               related_name='reviews')
-    score = models.IntegerField(
+    score = models.PositiveIntegerField(
         validators=[MaxValueValidator(10, 'Оценка может быть от 1 до 10'),
                     MinValueValidator(1, 'Оценка  может быть от 1 до 10')]
     )
@@ -119,6 +133,8 @@ class Review(models.Model):
         return self.text[:15]
 
     class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
         constraints = [
             models.UniqueConstraint(fields=['author', 'title'],
                                     name='unique_author_title')
@@ -136,3 +152,7 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text[:15]
+    
+    class Meta:
+        verbose_name = 'Коментарий'
+        verbose_name_plural = 'Коментарии'

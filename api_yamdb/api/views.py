@@ -103,18 +103,12 @@ class APISignup(APIView):
         email.send()
 
     def post(self, request):
-        if 'username' and 'email' in request.data:
-            if User.objects.filter(username=request.data.get('username'),
-                                   email=request.data.get('email')).exists():
-                self.send_email(
-                    User.objects.get(username=request.data.get('username'))
-                )
-                return Response(status=status.HTTP_200_OK)
         serializer = SignUpSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        self.send_email(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if serializer.is_valid():
+            user, create = User.objects.get_or_create(**serializer.validated_data)
+            self.send_email(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CreateDestroyViewSet(mixins.CreateModelMixin,
