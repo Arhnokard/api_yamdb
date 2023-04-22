@@ -8,11 +8,13 @@ from .validators import validate_username
 USER = 'user'
 ADMIN = 'admin'
 MODERATOR = 'moderator'
+STAFF = 'staff'
 
 ROLE_CHOICES = [
     (USER, USER),
     (ADMIN, ADMIN),
     (MODERATOR, MODERATOR),
+    (STAFF, STAFF),
 ]
 
 
@@ -65,6 +67,10 @@ class User(AbstractUser):
     @property
     def is_moderator(self):
         return self.role == MODERATOR
+
+    @property
+    def is_staff(self):
+        return self.role == STAFF
 
     class Meta:
         ordering = ('id',)
