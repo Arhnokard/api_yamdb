@@ -79,7 +79,7 @@ class Genre(models.Model):
     name = models.CharField('Название жанра', max_length=256)
     slug = models.SlugField('Сокращенное название жанра',
                             unique=True, max_length=50)
-    
+
     class Meta:
         ordering = ('name',)
         verbose_name = 'Жанр'
@@ -90,7 +90,7 @@ class Category(models.Model):
     name = models.CharField('Название категории', max_length=256)
     slug = models.SlugField('Сокращенное название категории',
                             unique=True, max_length=50)
-    
+
     class Meta:
         ordering = ('name',)
         verbose_name = 'Категория'
@@ -106,7 +106,7 @@ class Title(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL,
         blank=True, null=True, related_name='titles')
-    
+
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
@@ -152,7 +152,7 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text[:15]
-    
+
     class Meta:
         verbose_name = 'Коментарий'
         verbose_name_plural = 'Коментарии'

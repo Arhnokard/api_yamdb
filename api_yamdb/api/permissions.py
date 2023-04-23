@@ -6,6 +6,7 @@ class AdminOnly(permissions.BasePermission):
         return (
             request.user.is_admin or request.user.is_staff
         )
+
     def has_object_permission(self, request, view, obj):
         return (
             request.user.is_admin or request.user.is_staff

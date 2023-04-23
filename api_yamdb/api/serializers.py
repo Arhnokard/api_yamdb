@@ -20,24 +20,25 @@ class UsersSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         staff = False
-        if 'admin' == validated_data['role']:
-            staff = True
+        if 'role' in self.initial_data:
+            if 'admin' == validated_data['role']:
+                staff = True
         user = User.objects.create(is_staff=staff, **validated_data)
         return user
 
     def update(self, instance, validated_data):
-        staff = False
-        if 'admin' == validated_data['role']:
-            staff = True
         instance.username = validated_data.get('username', instance.username)
         instance.email = validated_data.get('email', instance.username)
-        instance.first_name = validated_data.get('firs_name',
+        instance.first_name = validated_data.get('first_name',
                                                  instance.username)
         instance.last_name = validated_data.get('last_name',
                                                 instance.username)
         instance.bio = validated_data.get('bio', instance.username)
         instance.role = validated_data.get('role', instance.username)
-        instance.is_staff = staff
+        if 'admin' == instance.role:
+            instance.is_staff = True
+        else:
+            instance.is_staff = False
         instance.save()
         return instance
 
@@ -73,7 +74,7 @@ class SignUpSerializer(serializers.Serializer):
             if data['username'] == user.username:
                 if data['email'] == user.email:
                     return data
-                raise ValidationError('Указан неверный email')            
+                raise ValidationError('Указан неверный email')
             if data['email'] == user.email:
                 raise ValidationError('email занят')
         return data
@@ -120,7 +121,7 @@ class TitleSerializer(serializers.ModelSerializer):
 
     def validate_year(self, value):
         year = dt.date.today().year
-        if not (0 < value <= year):
+        if not (-1500 < value <= year):
             raise serializers.ValidationError(
                 'Проверьте год создания произведения!')
         return value
