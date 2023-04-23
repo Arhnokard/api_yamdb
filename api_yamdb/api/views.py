@@ -7,7 +7,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-
+from django.db.models import Avg
 
 from reviews.models import Genre, Category, Title, User, Review
 from .permissions import (AdminModeratorAuthorPermission, AdminOnly,
@@ -103,54 +103,56 @@ class APISignup(APIView):
         email.send()
 
     def post(self, request):
-        if 'username' and 'email' in request.data:
-            if User.objects.filter(username=request.data.get('username'),
-                                   email=request.data.get('email')).exists():
-                self.send_email(
-                    User.objects.get(username=request.data.get('username'))
-                )
-                return Response(status=status.HTTP_200_OK)
         serializer = SignUpSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        self.send_email(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if serializer.is_valid():
+            user, create = User.objects.get_or_create(
+                **serializer.validated_data
+            )
+            self.send_email(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CreateDestroyViewSet(mixins.CreateModelMixin,
                            mixins.DestroyModelMixin,
                            mixins.ListModelMixin,
                            viewsets.GenericViewSet):
-    pass
+    permission_classes = (IsAdminUserOrReadOnly,)
+    lookup_field = 'slug'
+    pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
 
 
 class GenreViewSet(CreateDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
-    lookup_field = 'slug'
-    pagination_class = LimitOffsetPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
 
 
 class CategoryViewSet(CreateDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
-    lookup_field = 'slug'
-    pagination_class = LimitOffsetPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.annotate(rating=Avg('reviews__score'))
     serializer_class = TitleSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
+
+    def perform_create(self, serializer):
+        category = get_object_or_404(
+            Category, slug=self.request.data.get('category')
+        )
+        genre = Genre.objects.filter(
+            slug__in=self.request.data.getlist('genre')
+        )
+        serializer.save(category=category, genre=genre)
+
+    def perform_update(self, serializer):
+        self.perform_create(serializer)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

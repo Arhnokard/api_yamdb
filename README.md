@@ -106,3 +106,11 @@ GET http://127.0.0.1:8000/api/v1/titles/{title_id}/reviews/{review_id}/comments/
 "pub_date": "2019-08-24T14:15:22Z"
 }
 ```
+
+**Managment команда для заполнения БД**
+Заполняет пустую БД данными из csv файлов
+```
+
+python managment.py load_csv
+
+```
