@@ -18,6 +18,29 @@ class UsersSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
 
+    def create(self, validated_data):
+        staff = False
+        if 'admin' == validated_data['role']:
+            staff = True
+        user = User.objects.create(is_staff=staff, **validated_data)
+        return user
+
+    def update(self, instance, validated_data):
+        staff = False
+        if 'admin' == validated_data['role']:
+            staff = True
+        instance.username = validated_data.get('username', instance.username)
+        instance.email = validated_data.get('email', instance.username)
+        instance.first_name = validated_data.get('firs_name',
+                                                 instance.username)
+        instance.last_name = validated_data.get('last_name',
+                                                instance.username)
+        instance.bio = validated_data.get('bio', instance.username)
+        instance.role = validated_data.get('role', instance.username)
+        instance.is_staff = staff
+        instance.save()
+        return instance
+
 
 class NotAdminSerializer(serializers.ModelSerializer):
     class Meta:
