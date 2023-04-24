@@ -18,23 +18,15 @@ class UsersSerializer(serializers.ModelSerializer):
             'last_name', 'bio', 'role')
 
     def create(self, validated_data):
-        staff = False
-        if 'role' in self.initial_data:
-            if 'admin' == validated_data['role']:
-                staff = True
-        user = User.objects.create(is_staff=staff, **validated_data)
+        user = User.objects.create(**validated_data)
+        if user.is_admin:
+            user.is_staff = True
+            user.save()
         return user
 
     def update(self, instance, validated_data):
-        instance.username = validated_data.get('username', instance.username)
-        instance.email = validated_data.get('email', instance.username)
-        instance.first_name = validated_data.get('first_name',
-                                                 instance.username)
-        instance.last_name = validated_data.get('last_name',
-                                                instance.username)
-        instance.bio = validated_data.get('bio', instance.username)
-        instance.role = validated_data.get('role', instance.username)
-        if 'admin' == instance.role:
+        super().update(instance, validated_data)
+        if instance.is_admin:
             instance.is_staff = True
         else:
             instance.is_staff = False
@@ -68,14 +60,18 @@ class SignUpSerializer(serializers.Serializer):
     )
 
     def validate(self, data):
-        users = User.objects.all()
-        for user in users:
-            if data['username'] == user.username:
-                if data['email'] == user.email:
-                    return data
-                raise ValidationError('Указан неверный email')
-            if data['email'] == user.email:
-                raise ValidationError('email занят')
+        if User.objects.filter(username=data['username']).exists():
+            user = User.objects.get(username=data['username'])
+            if user.email == data['email']:
+                return data
+            else:
+                raise ValidationError(
+                    f'{data["email"]} не соответствует '
+                    f'зарегистрированому на акаунте {user.username}'
+                )
+        if User.objects.filter(email=data['email']).exists():
+            raise ValidationError(f'{data["email"]} уже зарегистрирован, '
+                                  'укажите другой email')
         return data
 
     class Meta:
