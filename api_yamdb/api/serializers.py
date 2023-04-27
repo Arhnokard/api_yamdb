@@ -17,22 +17,6 @@ class UsersSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
 
-    def create(self, validated_data):
-        user = User.objects.create(**validated_data)
-        if user.is_admin:
-            user.is_staff = True
-            user.save()
-        return user
-
-    def update(self, instance, validated_data):
-        super().update(instance, validated_data)
-        if instance.is_admin:
-            instance.is_staff = True
-        else:
-            instance.is_staff = False
-        instance.save()
-        return instance
-
 
 class NotAdminSerializer(serializers.ModelSerializer):
     class Meta:
@@ -64,11 +48,10 @@ class SignUpSerializer(serializers.Serializer):
             user = User.objects.get(username=data['username'])
             if user.email == data['email']:
                 return data
-            else:
-                raise ValidationError(
-                    f'{data["email"]} не соответствует '
-                    f'зарегистрированому на акаунте {user.username}'
-                )
+            raise ValidationError(
+                f'{data["email"]} не соответствует '
+                f'зарегистрированому на акаунте {user.username}'
+            )
         if User.objects.filter(email=data['email']).exists():
             raise ValidationError(f'{data["email"]} уже зарегистрирован, '
                                   'укажите другой email')
