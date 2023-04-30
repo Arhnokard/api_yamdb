@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -14,6 +14,55 @@ ROLE_CHOICES = [
     (ADMIN, ADMIN),
     (MODERATOR, MODERATOR),
 ]
+
+
+class UserManager(models.Manager):
+    def create(self, **kwargs):
+        user = User(**kwargs)
+        if kwargs.get('role') == 'admin':
+            user.is_staff = True
+        user.save()
+        return user
+
+    def update(self, instance, **kwargs):
+        if 'username' in kwargs:
+            instance.username = kwargs['username']
+        if 'email' in kwargs:
+            instance.email = kwargs['email']
+        if 'role' in kwargs:
+            instance.role = kwargs['role']
+            if kwargs.get('role') == 'admin':
+                instance.is_staff = True
+            else:
+                instance.is_staff = False
+        if 'bio' in kwargs:
+            instance.bio = kwargs['bio']
+        if 'first_name' in kwargs:
+            instance.first_name = kwargs['first_name']
+        if 'last_name' in kwargs:
+            instance.last_name = kwargs['last_name']
+        instance.save()
+        return instance
+
+
+class CreateUserManager(UserManager):
+    def create_user(self, username, email, **extra_fields):
+        if extra_fields['role'] == 'admin':
+            extra_fields.setdefault('is_staff', True)
+        user = self.model(username=username,
+                          email=email, **extra_fields)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, email,
+                         password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'admin')
+        user = self.model(username=username,
+                          email=email, **extra_fields)
+        user.save(using=self._db)
+        return user
 
 
 class User(AbstractUser):
@@ -54,13 +103,15 @@ class User(AbstractUser):
         default='XXXX'
     )
 
+    objects = CreateUserManager()
+
     @property
     def is_user(self):
         return self.role == USER
 
     @property
     def is_admin(self):
-        return self.role == ADMIN or self.is_superuser
+        return self.role == ADMIN or self.is_staff
 
     @property
     def is_moderator(self):
