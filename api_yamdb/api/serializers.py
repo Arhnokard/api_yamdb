@@ -10,6 +10,9 @@ from reviews.models import Genre, Category, Title, Review, User, Comment
 from reviews.validators import validate_username
 
 
+REGEX = r'^[-a-zA-Z0-9_]+$'
+
+
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -68,7 +71,7 @@ class SignUpSerializer(serializers.Serializer):
 class GenreSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
         validators=(validators.MaxLengthValidator(50),
-                    validators.RegexValidator(r'^[-a-zA-Z0-9_]+$'),
+                    validators.RegexValidator(REGEX),
                     UniqueValidator(queryset=Genre.objects.all()))
     )
 
@@ -80,7 +83,7 @@ class GenreSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
         validators=(validators.MaxLengthValidator(50),
-                    validators.RegexValidator(r'^[-a-zA-Z0-9_]+$'),
+                    validators.RegexValidator(REGEX),
                     UniqueValidator(queryset=Category.objects.all()))
     )
 
